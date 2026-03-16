@@ -1,0 +1,222 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{fancyhdr}
+\usepackage[includehead, margin=2cm]{geometry}
+\usepackage{listings}
+\usepackage{titling}
+\usepackage{parskip}
+\usepackage{fancyvrb}
+\usepackage{tabularx}
+\usepackage{float}
+\usepackage{hyperref}
+
+\pagestyle{fancy}
+
+\newenvironment{centeredcode}
+{
+\ttfamily
+\begin{center}
+\begin{tabular}{l}
+}
+{
+\end{tabular}
+\end{center}
+}
+
+\title{CS 4240: Compilers and Interpreters, Project 2, Spring 2026\\
+\Large
+Assigned: February 16, 2026, 10\% of course grade\\
+(100 points total)\\
+Due by March 16, 2026 11:59pm on Gradescope
+}
+\preauthor{}
+\postauthor{}
+\author{}
+\date{}
+
+\begin{document}
+\lhead{CS 4240, Spring 2026}
+\rhead{Project 2}
+\maketitle
+\thispagestyle{fancy}
+
+\section{Project Description}
+In this project, you will build a simple optimizer (middle end) for Tiger-IR. 
+The reference manual for Tiger-IR can be found on the course Canvas Files section.
+Your optimizer must be in one of the following languages: Java, Python, C, or C++. The optimizer should read in a text-formatted Tiger-IR program, perform optimizations on it,
+and write the optimized IR code to a file.
+
+The goal of your optimizer is to improve the performance of a given program.
+In this project, we measure the performance of an IR program by collecting the \emph{dynamic instruction count},
+which is the number of instructions executed by an IR interpreter during an execution.
+Please note that this is a different goal from minimizing the number of instructions in a program,
+which is called the \emph{static instruction count},
+as sometimes it is possible to insert more static instructions to
+obtain a reduced dynamic instruction count. More specifically:
+\begin{itemize}
+    \item \textit{Static Instruction Count:} It is the total number of instructions present in the compiled IR. It is a spatial measurement of the program's \textit{size}.
+    \item \textit{Dynamic Instruction Count:} It is the total number of instructions actually executed by the IR interpreter/processor during a specific run of the program. It is a measurement of the program's \textit{execution time}.
+\end{itemize}
+Both of these metrics could be understood using a simple example given below:
+
+\noindent % Prevents paragraph indentation
+\begin{minipage}{0.45\textwidth}
+    \begin{center}
+    \begin{lstlisting}
+    1:  assign i = 0
+    2:  label LOOP_START
+    3:  compare i < 100
+    4:  jump_if_false EXIT
+    5:  call some_function()
+    6:  add i = i + 1
+    7:  jump LOOP_START
+    8:  label EXIT
+        \end{lstlisting}
+    \end{center}
+\end{minipage}%
+\hfill% % Fills space between minipages
+\begin{minipage}{0.45\textwidth}
+\begin{itemize}
+    \item Static Count: 8 instructions.
+    \item Dynamic Count: Approximately 500+ instructions (the loop body executes 100 times, plus the initial setup and exit).
+\end{itemize}
+\end{minipage}
+
+As indicated below, we identify a reference optimization (dead code
+elimination using reaching definitions) that suffices to obtain full
+credit.  However, there is no restriction on which optimizations your optimizer should
+contain, as long as they are correct, and meet the dynamic instruction count
+performance goals outlined below in Section~\ref{sec:test}. For correctness, any program $P$ that is subject to an optimization $O$, the output program $O(P)$ must be I/O equivalent to $P$. That is:
+\[ \forall x, P(x) \equiv (O(P))(x) \]
+
+The deliverables for the project are a design document and code
+submission, which are described below in Sections~\ref{sec:opt} and \ref{sec:test}.
+
+\subsection{Design of your Optimizer (30 points)}\label{sec:opt}
+
+With your submission, please include a design document called
+`design.pdf' in the zip file mentioned in Section \ref{sec:test}.
+%
+This document should briefly describe the following:
+%
+\begin{enumerate}
+\item High-level architecture of your optimizer, including the
+  analysis and optimization
+  algorithm(s) implemented, and why you chose that approach.
+\item Low-level design decisions you made in selection of
+  implementation language, and their rationale.
+\item Software engineering challenges and issues that arose and how
+  you resolved them.
+\item Any known outstanding bugs or deficiencies that you were unable
+  to   resolve before the project submission.
+       \item Build and usage instructions for your optimizer.
+        \item A summary of the test results for the public test cases
+          (see Section~\ref{sec:test}).
+ \end{enumerate}
+   
+\subsection{Evaluation (70 points)}\label{sec:test}
+
+The grading on the performance of your optimizer's output is based on test cases.
+A test case is defined as a \textless test-IR-program, test-input\textgreater~pair.
+First we will execute your \texttt{build.sh} script to build your optimizer executable.
+Then we will run your optimizer on a set of test programs using your \texttt{run.sh} script.  20 points will
+be allocated for {\em public} test cases, which we will provide you, and 50
+points will be allocated for {\em hidden} test cases, which we will
+use when grading your project.  For each test case, we will perform
+two steps to evaluate your optimizer:
+\begin{enumerate}
+\item Execute your  \texttt{run.sh} script to run your optimizer on a test-IR-program to obtain an optimized IR program.
+\item Run the optimized IR programs on an IR interpreter (which we will
+  provide you for testing purposes) with test-input, and report the
+  dynamic instruction count obtained during the execution.  (Label
+  instructions will not be included in the dynamic instruction count.)
+\end{enumerate}
+
+In any of the following cases, you will get 0\% of the score for a test case:
+\begin{itemize}
+\item Your optimizer crashes, or produces invalid code.
+\item The optimized program does not produce the desired output when
+  being interpreted.
+\item The optimized program produces the desired output, but its
+  dynamic instruction count is $\geq$ that of the original IR program.
+\end{itemize}
+
+To get 50\% of the score for a test case, the IR code generated by your optimizer will need to have the same or better performance compared with an optimizer (optimizer A) that does the following optimization:
+\begin{itemize}
+\item Simple dead (useless) code elimination without branch removal
+\begin{itemize}
+\item Based on the algorithm in Lecture slides (without reaching definitions)
+\end{itemize}
+\end{itemize}
+
+To get 100\% of the score for a test case, the IR code generated by
+your optimizer will need to have the same or better performance
+compared with an optimizer (optimizer B) that does the following
+optimization:
+\begin{itemize}
+\item Dead (useless) code elimination without branch removal
+\begin{itemize}
+\item Based on the algorithm in  Lecture slides (with reaching definitions)
+\end{itemize}
+\end{itemize}
+
+
+The optimizations mentioned above are what we expect most project
+teams to implement.  However, you are welcome to implement other/additional
+optimizations that you choose.  
+Your goal is to make your optimizer generate equivalent or better code than
+optimizer A or B does,
+in terms of performance (dynamic instruction count).  Assuming
+successful completion.  The actual score
+that you receive for a test case will be an interpolation between the
+50\% and 100\% reference points mentioned above.
+
+\section{Provided Code}\label{sec:code}
+
+We have provided some Java helper code and the IR interpreter in:\\
+\url{https://github.gatech.edu/CS4240-Spring26/Project-2}
+
+You should have access if you have activated your GT GitHub account.
+If you have not done so, please sign into \url{https://github.gatech.edu}. 
+If you can't access the repository, please make a private post on Ed to let the TAs know.
+
+\subsection{Helper Code}
+
+The Java helper code is located under \texttt{/Project-2/materials/src/ir}.
+It defines some data structures to represent the IR in memory,
+and provides functionality for reading and printing the IR.
+
+If you decide to use the helper code in your project, please be sure
+to carefully read all the source files, except \texttt{IRReader.java} and \texttt{IRPrinter.java}.
+For these two files, you only need to know how to use the APIs they provide,
+which is demonstrated in \texttt{/Project-2/materials/src/Demo.java}, but you are
+welcome to read the two files also.
+The \texttt{Demo.java} file also includes some important documentation and usage patterns of the helper code.
+
+It is not required to use the helper code, and you are welcome to
+modify the helper code as you see fit.
+
+\subsection{Tiger-IR Interpreter}
+
+The source code of the IR interpreter is in \texttt{/Project-2/materials/src/IRInterpreter.java}.
+It also uses the helper code.
+Please refer to \texttt{/Project-2/materials/README.md} for more information about how to build and use it.
+We will grade your project with the same IR interpreter, but you can
+feel free to modify it for debugging purposes as needed.
+
+\section{Submission}
+
+The deliverable files are:
+\begin{itemize}
+    \item The complete source code of your project, as described in Section~\ref{sec:test}.
+    \item A \texttt{build.sh} script in the top level directory which builds your project.
+    \item A \texttt{run.sh} script in the top level directory. This script should take 2 command line arguments: a path to the input ir file and a path where the output ir file should be created
+
+    \item The design.pdf file described in Section~\ref{sec:test}.
+\end{itemize}
+
+\section{Collaboration}
+The collaboration policy for Project-2 is same as collaboration policy of Project-1.
+
+
+\end{document}
