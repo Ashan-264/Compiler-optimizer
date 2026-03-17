@@ -1,12 +1,54 @@
-import ir.*;
-import ir.operand.*;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
-import java.util.*;
+import ir.*;// IRFUnction. ITinstruction import
+import ir.operand.*; //IRvariableoperand,IRlabeloperand
+import java.io.FileOutputStream; //writing to output file
+import java.io.PrintStream; //print statements to output file
+import java.util.*; //java data structs
+
+/* IRread.java -
+    parseIRFIle - reads Tiger-IR file and builds a clean, hierachical tree of java objects
+    input: string input_file ->Tiger-IR file
+    output: IRprogram (object containing all global variable snad list of IRfunctions in the file
+    
+    
+IRPrinter.java -
+    printProgram - takes an created data structures asnd makes them an IR program again
+    input: IRProgram program
+    output: File with IR code
+
+IRProgram 
+    text file representatio of IR program from IR reader
+    List<IRFunction> functions - list of functions in program
+    List<IRVariableOperand> global_variables - list of global variables in program
+
+IRFunction
+    one function in prgam
+    types
+    String name: name of function
+    List<IRVariableOperand> instructions: raw linear list of operations in function
+    //overwrite to delete deadcode
+    List<IRVariableOperand> variables: local variables in the fucntion
+    List<IRVariableOperand> parameters: arguments passed into function
+
+IR instruction 
+    one line of code
+    Opcode, opCode: enum for type of operation
+    IROperand[] operands:  array containing arguments for instruction, 
+        sub X,Y, Z index 0- dest X, index 1 - src Y, index 2 - src Z
+
+IR variable operand
+    String getName() - name of variable
+    returns string name of variable
+
+IRlabelOperand
+    String getName() - name of label
+    returns string name of label
+
+
+*/
 
 public class TigerOptimizer
 {
-    // struct-like class to hold basic block data and cfg edges
+    // class to hold blocks for cfg and data flow
     static class BasicBlock
     {
         List<IRInstruction> instructions = new ArrayList<>();
@@ -23,15 +65,14 @@ public class TigerOptimizer
     {
         if (args.length != 2)
         {
-            System.err.println("Usage: java TigerOptimizer <input_ir> <output_ir>"); // error if wrong args
+            System.err.println("too many args"+ args.length); // too many args
             System.exit(1);
         }
 
         String input_file = args[0];  // get input file path
         String output_file = args[1]; // get output file path
 
-        try
-        {
+       
             IRReader reader = new IRReader(); // intialize reader
             IRProgram program = reader.parseIRFile(input_file); // parse the ir file into program struct
 
@@ -44,12 +85,7 @@ public class TigerOptimizer
             IRPrinter printer = new IRPrinter(ps); // intialize printer
             printer.printProgram(program); // print the optimized ir
             ps.close(); // close stream
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-            System.exit(1);
-        }
+        
     }
 
     private static void optimize_global(IRFunction function)
